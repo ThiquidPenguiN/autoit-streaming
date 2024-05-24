@@ -6,7 +6,6 @@
 #include <WindowsConstants.au3>
 #include <Color.au3>
 #include <WinAPISysWin.au3>
-#include <Timers.au3> 
 #include <Winapi.au3>
 #include <AutoItConstants.au3>
 #include <Array.au3>
@@ -15,7 +14,7 @@ global $splashUserText, $J[11], $m = "", $I, $pixelOffSet, $splashStatus
 
 ;FFMPEG Stuff
 Local $cmdStream = 'ffmpeg.exe -s 1920x1080 -r 30 -rtbufsize 1500M -itsoffset -0.5 -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -f gdigrab -i desktop -c:v hevc_nvenc -f mpegts tcp://0.0.0.0:8888?listen' 
-
+msgbox(0,"", $cmdStream)
 ;Setup watermark
 
 $J[1] = " "
@@ -48,15 +47,17 @@ $splashUserText = _StringRepeat ( $stringToRepeat, 250 )
 ;Assure clean slate
 Local $ffmpegList = Null
 Local $ffmpegPID = Null
+Local $guiConfig = Null
 
 ;run watermarking
-Local $state = splash_text()
+Local $guiConfig = splash_text()
 
 While 1
 	;keep watermark alive and in front
-	$state = WinGetState($state)
+	Local $state = WinGetState($guiConfig)
+	;MsgBox($MB_SYSTEMMODAL, "", "WinActive" & @CRLF & $state)
 	If $state  >= 16   Then
-		WinActivate($state = splash_text(), "")
+		WinActivate($guiConfig, "")
 	EndIf
 	
 	$ffmpegList = check_ffmpeg()
@@ -64,7 +65,6 @@ While 1
 	If (_ArraySearch($ffmpegList,$ffmpegPID) <= -1) Then
 		$ffmpegPID = run_ffmpeg($cmdStream)
 	ElseIf Not (Int($ffmpegList[0][0]) = 1) Then
-		msgbox(0,"","running")
 		kill_ffmpeg($ffmpegPID,$ffmpegList)
 	EndIf
 			
@@ -80,36 +80,32 @@ kill_ffmpeg(0,0,$ffmpegList)
 ;Functions
 
 Func splash_text()
-	Local $hGUI = 0
+	; Font type to be used for setting the font of the controls.
 	Local Const $sFont = "Ariel"
-	
-	;Set GUI controls if not set
-	If Not $hGUI Then
-		$hGUI = GUICreate("watermark", @DeskTopWidth + $pixelOffSet, @DeskTopHeight + $pixelOffSet, -1, -1, -1, $WS_EX_TRANSPARENT)
 
-		; Create label controls.
-		GUICtrlCreateLabel($splashUserText, -1, -1,@DeskTopWidth + $pixelOffSet, @DeskTopHeight + $pixelOffSet, $SS_CENTER)
-		GUICtrlSetFont(-1, 72, $FW_NORMAL, $GUI_FONTNORMAL, $sFont) ; Set the font of the previous control.
-		GUICtrlSetColor(-1,0xFFFFFF)
-		GUISetBkColor(0x000000)
-		_WinAPI_SetLayeredWindowAttributes($hGUI, 0x000000)
+	; Create a GUI with various controls.
+	Local $hGUI = GUICreate("watermark", @DeskTopWidth + $pixelOffSet, @DeskTopHeight + $pixelOffSet, -1, -1, -1, $WS_EX_TRANSPARENT)
 
-		WinSetTrans($hGUI, "",  30)
+	; Create label controls.
+	GUICtrlCreateLabel($splashUserText, -1, -1,@DeskTopWidth + $pixelOffSet, @DeskTopHeight + $pixelOffSet, $SS_CENTER)
+	GUICtrlSetFont(-1, 72, $FW_NORMAL, $GUI_FONTNORMAL, $sFont) ; Set the font of the previous control.
+	GUICtrlSetColor(-1,0xFFFFFF)
+	GUISetBkColor(0x000000)
+	_WinAPI_SetLayeredWindowAttributes($hGUI, 0x000000)
 
-		GUISetState(@SW_SHOW, $hGUI)
-		WinSetOnTop($hGUI, "", $WINDOWS_ONTOP)
-		$hwnd = WinGetHandle("[active]")
-	EndIf
-	
-	WinActivate($hwnd, "")
-	
-	;returns handle of the created, active window for splash text
+	WinSetTrans($hGUI, "",  30)
+
+	GUISetState(@SW_SHOW, $hGUI)
+	WinSetOnTop($hGUI, "", $WINDOWS_ONTOP)
+	$hwnd= WinGetHandle("[active]")
 	Return $hwnd
 
 EndFunc
 
+
+
 Func run_ffmpeg($_ffmpegCommand)
-	Return Run($_ffmpegCommand, "", @SW_HIDE)
+	Return Run($_ffmpegCommand, 'c:\temp\',@SW_HIDE)
 EndFunc
 
 Func check_ffmpeg()
