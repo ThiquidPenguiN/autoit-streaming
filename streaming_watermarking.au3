@@ -12,9 +12,27 @@
 
 global $splashUserText, $J[11], $m = "", $I, $pixelOffSet, $splashStatus
 
+;Setup system
+Local $sourcePath = String("c:\deleteme\")
+Local $destinationPath = $sourcePath & String("bin\")
+Local $zipExe = String("7zr.exe")
+
+If check_files($sourcePath & $zipExe, False) Then 
+	check_files($destinationPath, True)
+	FileInstall("c:\deleteme\7zr.exe", $destinationPath & $zipExe, 1)
+EndIf
+
+#install_resources($zipExe, $resourcePath)
+
 ;FFMPEG Stuff
+Local $ffmpegZip = "ffmpeg-7.0.1-essentials_build.7z"
 Local $cmdStream = 'ffmpeg.exe -s 1920x1080 -r 30 -rtbufsize 1500M -itsoffset -0.5 -f dshow -i audio="CABLE Output (VB-Audio Virtual Cable)" -f gdigrab -i desktop -c:v hevc_nvenc -f mpegts tcp://0.0.0.0:8888?listen' 
-msgbox(0,"", $cmdStream)
+
+If check_files($sourcePath & $ffmpegZip, False) Then 
+	check_files($destinationPath, True)
+	FileInstall("c:\deleteme\ffmpeg-7.0.1-essentials_build.7z", $destinationPath & $ffmpegZip, 1)
+EndIf
+
 ;Setup watermark
 
 $J[1] = " "
@@ -39,8 +57,6 @@ Local $confidentialData = string("CONFIDENTIAL") & _StringRepeat($J[10], 5)
 Local $stringToRepeat = $userData & $J[Random(1,10,1)] & $computerData & $J[Random(1,10,1)] & $dateData & $J[Random(1,10,1)] & $companyData & $J[Random(1,10,1)] & $confidentialData & $J[Random(1,10,1)]
 
 $splashUserText = _StringRepeat ( $stringToRepeat, 250 )
-
-
 
 ;Execute Commands
 
@@ -119,4 +135,26 @@ Func kill_ffmpeg($_whiteList,$_pids)
 			If Not ($_pids[$i][1] =$_whiteList) Then ProcessClose($_pids[$i][1])
 		Next
 	EndIf
+EndFunc
+
+
+Func check_files($_path, $_isDir)
+	#checks for data validity and corrects it
+	# $_path is path to file/directory
+	# $_isDir True/False
+	If $_isDir Then
+		If FileExists($_path) Then
+			Return True
+		Else 
+			DirCreate($_path)
+			sleep(100)
+			If FileExists($_path) Then
+				Return True
+			EndIf
+		EndIf
+	ElseIf FileExists($_path) Then
+		Return True
+	Else
+		Exit
+	EndIf	
 EndFunc
